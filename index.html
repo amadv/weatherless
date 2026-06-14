@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>weatherless</title>
+<style>
+html { zoom: 120% }
+
+body {
+  font: 1em/1.5 monospace;
+  padding: 2vh 2em 0;
+  background: #fff;
+  color: #111;
+  display: grid;
+  grid: 1fr / minmax(auto, 64ch);
+  justify-content: center;
+  height: 100%;
+}
+
+a { text-decoration: none; border-bottom: 1px solid currentColor; color: #111; }
+a:hover { background-color: #000; color: #fff; }
+
+center { padding: 15px 0 0; }
+
+hr { border: none; border-top: 1px solid #ccc; margin: 0.5em 0; }
+
+/* search + dropdown */
+#search-wrap { position: relative; width: 100%; margin: 1em auto 0; }
+#search-wrap input[type="text"] {
+  font: inherit;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid #ccc;
+  color: #111;
+  padding: 0.25em 0.5em;
+}
+#search-wrap input[type="text"]:focus { outline: none; border-color: #111; }
+#suggestions {
+  position: absolute;
+  top: 100%; left: 0; right: 0;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-top: none;
+  z-index: 10;
+  list-style: none;
+  margin: 0; padding: 0;
+  display: none;
+}
+#suggestions.open { display: block; }
+#suggestions li {
+  padding: 0.3em 0.5em;
+  cursor: pointer;
+  font-size: 0.9em;
+  border-bottom: 1px solid #eee;
+  margin: 0;
+}
+#suggestions li:last-child { border-bottom: none; }
+#suggestions li:hover, #suggestions li.active { background: #000; color: #fff; }
+
+#weather-output { margin-top: 1em; }
+
+.condition { font-size: 1.4em; font-weight: bold; margin: 0.5em 0; }
+.temp { font-size: 2em; font-weight: bold; letter-spacing: -1px; }
+.meta { color: #555; font-size: 0.9em; margin: 0.25em 0; }
+
+.unit-toggle {
+  font: inherit;
+  font-size: 0.85em;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background: none;
+  color: inherit;
+  padding: 0.1em 0.5em;
+  margin-left: 0.5em;
+  vertical-align: middle;
+}
+.unit-toggle:hover { background: #000; color: #fff; border-color: #000; }
+
+.section-head {
+  margin: 1.5em 0 0.5em;
+  font-size: 0.9em;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.hourly-scroll {
+  display: flex;
+  gap: 0.75em;
+  overflow-x: auto;
+  padding-bottom: 0.5em;
+  scrollbar-width: thin;
+}
+.hour-card {
+  flex: 0 0 auto;
+  text-align: center;
+  min-width: 5ch;
+  font-size: 0.85em;
+  line-height: 1.4;
+}
+.hour-card .h-time { color: #888; font-size: 0.8em; }
+.hour-card .h-temp { font-weight: bold; }
+.hour-card .h-icon { font-size: 1.1em; }
+
+ol { padding-left: 1em; margin: 0; }
+ol li { margin: 0.4em 0; }
+.day-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1em;
+  border-bottom: 1px solid #eee;
+  padding: 0.3em 0;
+}
+.day-label { min-width: 10ch; }
+.day-range { font-weight: bold; }
+.day-desc { color: #555; flex: 1; }
+
+#radar-wrap { margin-top: 1em; }
+#radar-wrap iframe {
+  width: 100%;
+  height: 300px;
+  border: 1px solid #ccc;
+  display: block;
+}
+
+footer { color: #333; margin-top: 2em; }
+
+@media (prefers-color-scheme: dark) {
+  body { background: #111; color: #eee; }
+  a { color: #eee; border-bottom-color: #888; }
+  a:hover { background-color: #fff; color: #000; }
+  #search-wrap input[type="text"] { background: #222; border-color: #555; color: #eee; }
+  #search-wrap input[type="text"]:focus { border-color: #eee; }
+  #suggestions { background: #222; border-color: #555; }
+  #suggestions li { border-bottom-color: #333; }
+  #suggestions li:hover, #suggestions li.active { background: #fff; color: #000; }
+  hr { border-top-color: #333; }
+  .meta { color: #aaa; }
+  .day-desc { color: #aaa; }
+  .day-row { border-bottom-color: #333; }
+  .hour-card .h-time { color: #666; }
+  .unit-toggle { border-color: #555; }
+  .unit-toggle:hover { background: #fff; color: #000; border-color: #fff; }
+  #radar-wrap iframe { border-color: #333; }
+  footer { color: #aaa; }
+}
+</style>
+</head>
+<body>
+
+<center>
+  <h1><b>weatherless</b></h1>
+  <hr />
+  <small>No adds, no tracking, simple weather, move on with your day.</small>
+</center>
+
+<div id="search-wrap">
+  <input type="text" id="city-input" placeholder="City, ZIP, or address (e.g. Pittsburgh, Tokyo, EC1A 1BB)" autocomplete="off" />
+  <ul id="suggestions"></ul>
+</div>
+<center><small>↵ enter to search &nbsp;·&nbsp; pick a result to confirm location</small></center>
+
+<div id="weather-output"></div>
+
+<footer><center><small>powered by <a href="https://open-meteo.com" target="_blank">open-meteo</a> &amp; <a href="https://nominatim.openstreetmap.org" target="_blank">nominatim</a> — support <a href="https://github.com/amadv" target="_blank"><b>amadv</b></a></small></center></footer>
+
+<script>
+// ── state ─────────────────────────────────────────────────────────────────────
+let useFahrenheit = localStorage.getItem("wl_unit") !== "C";
+let lastLat = null, lastLon = null, lastName = null, lastData = null;
+let activeIdx = -1;
+let suggestResults = [];
+let debounceTimer = null;
+
+// ── WMO ──────────────────────────────────────────────────────────────────────
+const WMO = {
+  0:["☀️","Clear sky"],    1:["🌤","Mainly clear"],   2:["⛅","Partly cloudy"],  3:["☁️","Overcast"],
+  45:["🌫","Foggy"],       48:["🌫","Icy fog"],
+  51:["🌦","Lt drizzle"],  53:["🌧","Drizzle"],        55:["🌧","Hvy drizzle"],
+  61:["🌧","Lt rain"],     63:["🌧","Rain"],            65:["🌧","Hvy rain"],
+  71:["🌨","Lt snow"],     73:["❄️","Snow"],            75:["❄️","Hvy snow"],
+  77:["🌨","Snow grains"],
+  80:["🌦","Lt showers"],  81:["🌧","Showers"],         82:["⛈","Vlt showers"],
+  85:["🌨","Snow showers"],86:["❄️","Hvy snow showers"],
+  95:["⛈","Thunderstorm"],96:["⛈","T-storm+hail"],    99:["⛈","T-storm+hail"],
+};
+function wmoIcon(c) { return (WMO[c]||["🌡",""])[0]; }
+function wmoLabel(c){ return (WMO[c]||["","Code "+c])[1]; }
+
+const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+function windDir(deg) {
+  return ["N","NE","E","SE","S","SW","W","NW"][Math.round(deg/45)%8];
+}
+
+// ── unit helpers ──────────────────────────────────────────────────────────────
+function displayTemp(f) {
+  if (useFahrenheit) return Math.round(f) + "°F";
+  return Math.round((f - 32) * 5/9) + "°C";
+}
+function toggleUnit() {
+  useFahrenheit = !useFahrenheit;
+  localStorage.setItem("wl_unit", useFahrenheit ? "F" : "C");
+  if (lastData) render(lastName, lastData);
+}
+
+// ── suggestions dropdown ──────────────────────────────────────────────────────
+const suggestEl = document.getElementById("suggestions");
+
+async function fetchSuggestions(query) {
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=6&addressdetails=1`;
+  const res = await fetch(url, { headers: {"Accept-Language":"en"} });
+  return res.json();
+}
+
+function shortName(item) {
+  const a = item.address || {};
+  const city = a.city || a.town || a.village || a.hamlet || a.county || "";
+  const state = a.state || "";
+  const country = a.country || "";
+  const zip = a.postcode || "";
+  const isUS = a.country_code === "us";
+  if (isUS && zip && city) return `${city}, ${state} ${zip}`.trim();
+  if (isUS && city && state) return `${city}, ${state}`;
+  if (city && country) return `${city}, ${country}`;
+  return item.display_name.split(",").slice(0,3).join(",").trim();
+}
+
+function showSuggestions(results) {
+  suggestResults = results;
+  activeIdx = -1;
+  suggestEl.innerHTML = "";
+  if (!results.length) { suggestEl.classList.remove("open"); return; }
+  results.forEach((r, i) => {
+    const li = document.createElement("li");
+    li.textContent = shortName(r);
+    li.addEventListener("mousedown", e => { e.preventDefault(); pickResult(i); });
+    suggestEl.appendChild(li);
+  });
+  suggestEl.classList.add("open");
+}
+
+function closeSuggestions() {
+  suggestEl.classList.remove("open");
+  suggestEl.innerHTML = "";
+  suggestResults = [];
+  activeIdx = -1;
+}
+
+function highlightActive() {
+  [...suggestEl.children].forEach((li, i) => li.classList.toggle("active", i === activeIdx));
+}
+
+function pickResult(i) {
+  const r = suggestResults[i];
+  const name = shortName(r);
+  input.value = name;
+  closeSuggestions();
+  loadByCoords(parseFloat(r.lat), parseFloat(r.lon), name);
+  localStorage.setItem("wl_location", name);
+}
+
+// ── geocode / reverse ─────────────────────────────────────────────────────────
+async function reverseGeocode(lat, lon) {
+  const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`, { headers:{"Accept-Language":"en"} });
+  const d = await res.json();
+  const a = d.address || {};
+  return [a.city||a.town||a.village, a.state].filter(Boolean).join(", ") || "Your location";
+}
+
+// ── weather fetch ─────────────────────────────────────────────────────────────
+async function getWeather(lat, lon) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+    `&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,relative_humidity_2m` +
+    `&hourly=temperature_2m,weather_code` +
+    `&daily=weather_code,temperature_2m_max,temperature_2m_min` +
+    `&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=7`;
+  const res = await fetch(url);
+  return res.json();
+}
+
+// ── render ────────────────────────────────────────────────────────────────────
+function render(name, data) {
+  lastName = name; lastData = data;
+  const c = data.current, d = data.daily, h = data.hourly;
+
+  const nowIso = c.time;
+  let startIdx = h.time.findIndex(t => t >= nowIso);
+  if (startIdx < 0) startIdx = 0;
+  const hourSlice  = h.time.slice(startIdx, startIdx + 24);
+  const hourTemps  = h.temperature_2m.slice(startIdx, startIdx + 24);
+  const hourCodes  = h.weather_code.slice(startIdx, startIdx + 24);
+
+  const hourCards = hourSlice.map((t, i) => {
+    const hr = new Date(t + ":00").getHours();
+    const label = hr === 0 ? "12am" : hr < 12 ? hr+"am" : hr === 12 ? "12pm" : (hr-12)+"pm";
+    return `<div class="hour-card">
+      <div class="h-time">${i===0?"Now":label}</div>
+      <div class="h-icon">${wmoIcon(hourCodes[i])}</div>
+      <div class="h-temp">${displayTemp(hourTemps[i])}</div>
+    </div>`;
+  }).join("");
+
+  const forecastRows = d.time.map((t, i) => {
+    const date = new Date(t + "T12:00:00");
+    const day = i===0?"Today":i===1?"Tomorrow":DAYS[date.getDay()];
+    return `<li><div class="day-row">
+      <span class="day-label">${day}</span>
+      <span class="day-range">${displayTemp(d.temperature_2m_min[i])} / ${displayTemp(d.temperature_2m_max[i])}</span>
+      <span class="day-desc">${wmoIcon(d.weather_code[i])} ${wmoLabel(d.weather_code[i])}</span>
+    </div></li>`;
+  }).join("");
+
+  const updated = new Date(c.time+":00").toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
+  const radarSrc = `https://embed.windy.com/embed2.html?lat=${lastLat}&lon=${lastLon}&detailLat=${lastLat}&detailLon=${lastLon}&width=650&height=300&panes=1&type=map&location=coordinates&detail=false&metricWind=mph&metricTemp=%C2%B0F&radarRange=-1`;
+
+  document.getElementById("weather-output").innerHTML = `
+    <p class="meta">${name}</p>
+    <p class="temp">${displayTemp(c.temperature_2m)} <button class="unit-toggle" onclick="toggleUnit()">${useFahrenheit?"→ °C":"→ °F"}</button></p>
+    <p class="condition">${wmoIcon(c.weather_code)} ${wmoLabel(c.weather_code)}</p>
+    <p class="meta">Feels like ${displayTemp(c.apparent_temperature)} &nbsp;·&nbsp; Humidity ${c.relative_humidity_2m}% &nbsp;·&nbsp; Wind ${Math.round(c.wind_speed_10m)} mph ${windDir(c.wind_direction_10m)}</p>
+    <p class="meta">Updated ${updated}</p>
+    <p class="section-head">Today — Hourly</p>
+    <div class="hourly-scroll">${hourCards}</div>
+    <p class="section-head">7-Day Forecast</p>
+    <ol>${forecastRows}</ol>
+    <div id="radar-wrap">
+      <p class="section-head">Radar</p>
+      <iframe id="radar-frame" frameborder="0" allowfullscreen></iframe>
+    </div>
+  `;
+  document.getElementById("radar-frame").src = radarSrc;
+}
+
+// ── load helpers ──────────────────────────────────────────────────────────────
+async function loadByCoords(lat, lon, name) {
+  const out = document.getElementById("weather-output");
+  out.innerHTML = `<p class="meta">Loading…</p>`;
+  lastLat = lat; lastLon = lon;
+  try {
+    const resolvedName = name || await reverseGeocode(lat, lon);
+    const data = await getWeather(lat, lon);
+    render(resolvedName, data);
+  } catch(e) {
+    out.innerHTML = `<p>⚠️ ${e.message}</p>`;
+  }
+}
+
+// ── input events ──────────────────────────────────────────────────────────────
+const input = document.getElementById("city-input");
+
+input.addEventListener("input", () => {
+  clearTimeout(debounceTimer);
+  const q = input.value.trim();
+  if (q.length < 2) { closeSuggestions(); return; }
+  debounceTimer = setTimeout(async () => {
+    const results = await fetchSuggestions(q);
+    showSuggestions(results);
+  }, 300);
+});
+
+input.addEventListener("keydown", e => {
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    activeIdx = Math.min(activeIdx + 1, suggestResults.length - 1);
+    highlightActive();
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    activeIdx = Math.max(activeIdx - 1, -1);
+    highlightActive();
+  } else if (e.key === "Enter") {
+    if (activeIdx >= 0 && suggestResults[activeIdx]) {
+      pickResult(activeIdx);
+    } else if (suggestResults.length === 1) {
+      pickResult(0);
+    } else if (suggestResults.length > 1) {
+      // highlight first so user sees options
+      activeIdx = 0; highlightActive();
+    }
+    // if no suggestions yet, do nothing — wait for dropdown
+  } else if (e.key === "Escape") {
+    closeSuggestions();
+  }
+});
+
+input.addEventListener("blur", () => {
+  // small delay so mousedown on li fires first
+  setTimeout(closeSuggestions, 150);
+});
+
+// ── init ──────────────────────────────────────────────────────────────────────
+const saved = localStorage.getItem("wl_location");
+if (saved) {
+  input.value = saved;
+  // load silently via suggestion fetch → pick first US result
+  (async () => {
+    try {
+      const results = await fetchSuggestions(saved);
+      if (results.length) {
+        const r = results[0];
+        lastLat = parseFloat(r.lat); lastLon = parseFloat(r.lon);
+        const data = await getWeather(lastLat, lastLon);
+        render(shortName(r), data);
+      }
+    } catch(e) {
+      document.getElementById("weather-output").innerHTML = `<p>⚠️ ${e.message}</p>`;
+    }
+  })();
+} else if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(
+    pos => loadByCoords(pos.coords.latitude, pos.coords.longitude),
+    () => {},
+    { timeout: 3000 }
+  );
+}
+</script>
+</body>
+</html>
