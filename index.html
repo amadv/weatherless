@@ -3,187 +3,200 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="dark light">
 <title>weatherless</title>
 <style>
-*, *::before, *::after { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: serif;
+      line-height: 1.4;
+      font-size: 18px;
+      padding: 0 10px 10px;
+    }
+    h1 { margin-bottom: 0; }
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      font-size: 15px;
+      margin: 2em 0 0;
+    }
+    a { color: inherit; text-decoration: none}
+    a:hover { background-color: #000; color: #fff }
+    #section-title h2 {
+      margin: 1em 0 0;
+    }
+    select {
+      font: inherit;
+      font-size: 13px;
+      margin: 1em 0;
+      display: block;
+      background: transparent;
+      border: 1px solid;
+      color: inherit;
+      padding: 2px 4px;
+    }
+    ol {
+      padding-left: 1.2em;
+    }
+    ol li {
+      margin-bottom: 8px;
+    }
+    ol li p {
+      margin: 2px 0 0;
+      font-size: 90%;
+      color: inherit;
+      opacity: 0.7;
+    }
+    #nav-links {
+      list-style: none;
+      padding: 0;
+      margin: 8px 0 0;
+    }
+    #nav-links a {
+      text-decoration: underline;
+    }
+    #nav-links li {
+      display: inline-block;
+      margin-right: 8px;
+    }
+    footer small {
+      display: block;
+      opacity: 0.7;
+    }
+    @media (prefers-color-scheme: dark) {
+      a:hover { background-color: #fff; color: #000; }
+    }
 
-html, body { margin: 0; padding: 0; height: 100%; }
-
-body {
-  font: monospace;
-  font-size: 1rem;
-  padding: 2vh 1.25em 0;
-  background: #fff;
-  color: #111;
-  max-width: 64ch;
-  margin: 0 auto;
-}
-
-a { text-decoration: none; border-bottom: 1px solid currentColor; color: #111; }
-a:hover { background-color: #000; color: #fff; }
-
-center { padding: 12px 0 0; }
-center h1 { margin: 0 0 6px; font-size: clamp(1.2em, 5vw, 1.6em); }
-center small { font-size: clamp(0.75em, 3vw, 0.85em); }
-
-hr { border: none; border-top: 1px solid #ccc; margin: 0.5em 0; }
-
-#search-wrap { position: relative; width: 100%; margin: 1em auto 0; }
-#search-wrap input[type="text"] {
-  font: inherit;
-  display: block;
-  width: 100%;
-  background: #fff;
-  border: 1px solid #ccc;
-  color: #111;
-  padding: 0.5em 0.75em;
-  min-height: 44px;
-  font-size: 1em;
-  -webkit-appearance: none;
-  border-radius: 0;
-}
-#search-wrap input[type="text"]:focus { outline: none; border-color: #111; }
-
-#suggestions {
-  position: absolute;
-  top: 100%; left: 0; right: 0;
-  background: #fff;
-  border: 1px solid #ccc;
-  border-top: none;
-  z-index: 10;
-  list-style: none;
-  margin: 0; padding: 0;
-  display: none;
-}
-#suggestions.open { display: block; }
-#suggestions li {
-  padding: 0.6em 0.75em;
-  cursor: pointer;
-  font-size: 0.9em;
-  border-bottom: 1px solid #eee;
-  margin: 0;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-}
-#suggestions li:last-child { border-bottom: none; }
-#suggestions li:hover, #suggestions li.active { background: #000; color: #fff; }
-
-#weather-output { margin-top: 1em; }
-
-.condition { font-size: clamp(1.1em, 4vw, 1.4em); font-weight: bold; margin: 0.4em 0; }
-.temp { font-size: clamp(1.6em, 10vw, 2.4em); font-weight: bold; letter-spacing: -1px; line-height: 1.1; }
-.meta { color: #555; font-size: clamp(0.8em, 3.5vw, 0.9em); margin: 0.3em 0; }
-
-.unit-toggle {
-  font: inherit;
-  font-size: 0.75em;
-  cursor: pointer;
-  border: 1px solid #ccc;
-  background: none;
-  color: inherit;
-  padding: 0.3em 0.6em;
-  margin-left: 0.4em;
-  vertical-align: middle;
-  min-height: 36px;
-  min-width: 44px;
-  touch-action: manipulation;
-  -webkit-appearance: none;
-  border-radius: 0;
-}
-.unit-toggle:hover, .unit-toggle:active { background: #000; color: #fff; border-color: #000; }
-
-.section-head {
-  margin: 1.25em 0 0.5em;
-  font-size: 0.8em;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.hourly-scroll {
-  display: flex;
-  gap: 0.5em;
-  overflow-x: auto;
-  padding-bottom: 0.75em;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-}
-.hour-card {
-  flex: 0 0 auto;
-  text-align: center;
-  min-width: 52px;
-  font-size: clamp(0.75em, 3vw, 0.85em);
-  line-height: 1.5;
-  padding: 0.4em 0.25em;
-}
-.hour-card .h-time { color: #888; font-size: 0.85em; }
-.hour-card .h-temp { font-weight: bold; }
-.hour-card .h-icon { font-size: 1.2em; }
-
-ol { padding-left: 0; margin: 0; list-style: none; }
-.day-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.5em;
-  border-bottom: 1px solid #eee;
-  padding: 0.5em 0;
-  min-height: 44px;
-  flex-wrap: wrap;
-}
-.day-label { min-width: 8ch; font-size: clamp(0.8em, 3vw, 0.9em); }
-.day-range { font-weight: bold; font-size: clamp(0.8em, 3vw, 0.9em); white-space: nowrap; }
-.day-desc { color: #555; flex: 1; font-size: clamp(0.75em, 2.8vw, 0.85em); text-align: right; }
-
-#radar-wrap { margin-top: 1em; margin-bottom: 2em; }
-#radar-wrap iframe {
-  width: 100%;
-  height: min(300px, 50vw);
-  border: 1px solid #ccc;
-  display: block;
-}
-
-footer { color: #333; margin-top: 1.5em; padding-bottom: 2em; }
-footer small { font-size: clamp(0.7em, 2.8vw, 0.8em); }
-
-@media (prefers-color-scheme: dark) {
-  body { background: #111; color: #eee; }
-  a { color: #eee; border-bottom-color: #888; }
-  a:hover { background-color: #fff; color: #000; }
-  #search-wrap input[type="text"] { background: #222; border-color: #555; color: #eee; }
-  #search-wrap input[type="text"]:focus { border-color: #eee; }
-  #suggestions { background: #222; border-color: #555; }
-  #suggestions li { border-bottom-color: #333; }
-  #suggestions li:hover, #suggestions li.active { background: #fff; color: #000; }
-  hr { border-top-color: #333; }
-  .meta { color: #aaa; }
-  .day-desc { color: #aaa; }
-  .day-row { border-bottom-color: #333; }
-  .hour-card .h-time { color: #666; }
-  .unit-toggle { border-color: #555; }
-  .unit-toggle:hover, .unit-toggle:active { background: #fff; color: #000; border-color: #fff; }
-  #radar-wrap iframe { border-color: #333; }
-  footer { color: #aaa; }
-}
-</style>
+    /* weatherless-specific */
+    html, body { height: 100%; }
+    center { padding: 12px 0 0; }
+    center h1 { margin: 0 0 6px; font-size: clamp(1.2em, 5vw, 1.6em); }
+    center small { font-size: clamp(0.75em, 3vw, 0.85em); }
+    hr { border: none; border-top: 1px solid #ccc; margin: 0.5em 0; }
+    #search-wrap { position: relative; width: 100%; margin: 1em 0; max-width: 666px; }
+    #search-wrap input[type="text"] {
+      font: inherit;
+      display: block;
+      width: 100%;
+      background: #fff;
+      border: 1px solid #ccc;
+      color: #111;
+      padding: 0.5em 0.75em;
+      min-height: 44px;
+      font-size: 1em;
+      -webkit-appearance: none;
+      border-radius: 0;
+    }
+    #search-wrap input[type="text"]:focus { outline: none; border-color: #111; }
+    #suggestions {
+      position: absolute;
+      top: 100%; left: 0; right: 0;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-top: none;
+      z-index: 10;
+      list-style: none;
+      margin: 0; padding: 0;
+      display: none;
+    }
+    #suggestions.open { display: block; }
+    #suggestions li {
+      padding: 0.6em 0.75em;
+      cursor: pointer;
+      font-size: 0.9em;
+      border-bottom: 1px solid #eee;
+      margin: 0;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+    }
+    #suggestions li:last-child { border-bottom: none; }
+    #suggestions li:hover, #suggestions li.active { background: #000; color: #fff; }
+    #weather-output { margin-top: 1em; }
+    .condition { font-size: clamp(1.1em, 4vw, 1.4em); font-weight: bold; margin: 0.4em 0; }
+    .temp { font-size: clamp(1.6em, 10vw, 2.0em); font-weight: bold; margin: 25px 0; }
+    .meta { color: #555; font-size: clamp(0.8em, 3.5vw, 0.9em); margin: 0.3em 0; }
+    .unit-toggle {
+      font: inherit;
+      font-size: 0.75em;
+      cursor: pointer;
+      border: 1px solid #ccc;
+      background: none;
+      color: inherit;
+      padding: 0.3em 0.6em;
+      margin-left: 0.4em;
+      vertical-align: middle;
+      min-height: 36px;
+      min-width: 44px;
+      touch-action: manipulation;
+      -webkit-appearance: none;
+      border-radius: 0;
+    }
+    .unit-toggle:hover, .unit-toggle:active { background: #000; color: #fff; border-color: #000; }
+    .section-head { margin: 1.25em 0 0.5em; font-size: 0.8em; text-transform: uppercase; letter-spacing: 1px; }
+    .hourly-scroll {
+      display: flex;
+      gap: 0.5em;
+      overflow-x: auto;
+      padding-bottom: 0.75em;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+    }
+    .hour-card { flex: 0 0 auto; text-align: center; min-width: 52px; font-size: clamp(0.75em, 3vw, 0.85em); line-height: 1.5; padding: 0.4em 0.25em; }
+    .hour-card .h-time { color: #888; font-size: 0.85em; }
+    .hour-card .h-temp { font-weight: bold; }
+    .hour-card .h-icon { font-size: 1.2em; }
+    ol { padding-left: 0; margin: 0; list-style: none; }
+    .day-row { display: flex; justify-content: space-between; align-items: center; gap: 0.5em; border-bottom: 1px solid #eee; padding: 0.5em 0; min-height: 44px; flex-wrap: wrap; }
+    .day-label { min-width: 8ch; font-size: clamp(0.8em, 3vw, 0.9em); }
+    .day-range { font-weight: bold; font-size: clamp(0.8em, 3vw, 0.9em); white-space: nowrap; }
+    .day-desc { color: #555; flex: 1; font-size: clamp(0.75em, 2.8vw, 0.85em); text-align: right; }
+    #radar-wrap { margin-top: 1em; margin-bottom: 2em; }
+    #radar-wrap iframe { width: 100%; height: min(300px, 50vw); border: 1px solid #ccc; display: block; }
+    footer { color: #333; margin-top: 1.5em; padding-bottom: 2em; }
+    footer small { font-size: clamp(0.7em, 2.8vw, 0.8em); }
+    @media (prefers-color-scheme: dark) {
+      body { background: #111; color: #eee; }
+      a { color: #eee; border-bottom-color: #888; }
+      a:hover { background-color: #fff; color: #000; }
+      #search-wrap input[type="text"] { background: #222; border-color: #555; color: #eee; }
+      #search-wrap input[type="text"]:focus { border-color: #eee; }
+      #suggestions { background: #222; border-color: #555; }
+      #suggestions li { border-bottom-color: #333; }
+      #suggestions li:hover, #suggestions li.active { background: #fff; color: #000; }
+      hr { border-top-color: #333; }
+      .meta { color: #aaa; }
+      .day-desc { color: #aaa; }
+      .day-row { border-bottom-color: #333; }
+      .hour-card .h-time { color: #666; }
+      .unit-toggle { border-color: #555; }
+      .unit-toggle:hover, .unit-toggle:active { background: #fff; color: #000; border-color: #fff; }
+      #radar-wrap iframe { border-color: #333; }
+      footer { color: #aaa; }
+    }
+  </style>
 </head>
 <body>
 
-<center>
-  <h1><b>weatherless</b></h1>
-  <hr />
-  <small>No ads, no tracking, simple weather, move on with your day.</small>
-</center>
+<h1><b>weatherless</b></h1>
+<small>No ads, no tracking, simple weather, move on with your day.</small>
 
 <div id="search-wrap">
   <input type="text" id="city-input" placeholder="City, ZIP, or address" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="search" enterkeyhint="search" />
   <ul id="suggestions"></ul>
 </div>
-<center><small>↵ enter to search &nbsp;·&nbsp; pick a result to confirm location</small></center>
+<small>↵ enter to search &nbsp;·&nbsp; pick a result to confirm location</small>
 
 <div id="weather-output"></div>
 
-<footer><center><small>powered by <a href="https://open-meteo.com" target="_blank">open-meteo</a> &amp; <a href="https://nominatim.openstreetmap.org" target="_blank">nominatim</a> — support <a href="https://github.com/amadv" target="_blank"><b>amadv</b></a></small></center></footer>
+<footer>
+	<small>Built by <a href="https://github.com/amadv" target="_blank"><b>amadv</b></a></small>
+	<small>Maintained with ♥ for the web.</small>
+</footer>
 
 <script>
 let useFahrenheit = localStorage.getItem("wl_unit") !== "C";
@@ -331,7 +344,7 @@ function render(name, data) {
 
   document.getElementById("weather-output").innerHTML = `
     <p class="meta" style="margin-top:0.75em">${name}</p>
-    <p class="temp">${displayTemp(c.temperature_2m)} <button class="unit-toggle" onclick="toggleUnit()">${useFahrenheit?"→ °C":"→ °F"}</button></p>
+    <p class="temp">${displayTemp(c.temperature_2m)} <button class="unit-toggle" onclick="toggleUnit()">${useFahrenheit?"°C":"°F"}</button></p>
     <p class="condition">${wmoIcon(c.weather_code)} ${wmoLabel(c.weather_code)}</p>
     <p class="meta">Feels like ${displayTemp(c.apparent_temperature)} · Humidity ${c.relative_humidity_2m}% · Wind ${Math.round(c.wind_speed_10m)} mph ${windDir(c.wind_direction_10m)}</p>
     <p class="meta">Updated ${updated}</p>
